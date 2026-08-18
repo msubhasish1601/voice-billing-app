@@ -1,187 +1,113 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import axios from 'axios';
 
-export function useVoiceRecognition({ apiEndpoint, onDataReceived, getCurrentBillState }) {
+export function useVoiceRecognition({ apiEndpoint, getCurrentBillState, onDataReceived }) {
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('Hold the button to speak, release to process.');
+  const [statusMessage, setStatusMessage] = useState('');
   const [transcript, setTranscript] = useState('');
-  const [permissionStatus, setPermissionStatus] = useState('prompt'); // 'prompt' | 'granted' | 'denied'
+  const [permissionStatus, setPermissionStatus] = useState('prompt');
 
+  // We use a ref to constantly track the text as it streams in, 
+  // bypassing Android's broken final onresult flush.
   const recognitionRef = useRef(null);
-  const accumulatedTextRef = useRef('');
-  const mediaStreamRef = useRef(null);
+  const transcriptRef = useRef(''); 
 
-  // 1. Check current microphone permission status on mount
-  useEffect(() => {
-    async function checkPermission() {
-      if (navigator.permissions && navigator.permissions.query) {
-        try {
-          const result = await navigator.permissions.query({ name: 'microphone' });
-          setPermissionStatus(result.state);
-
-          result.onchange = () => {
-            setPermissionStatus(result.state);
-          };
-        } catch (err) {
-          console.warn('Permissions API query for microphone not supported:', err);
-        }
-      }
-    }
-    checkPermission();
-  }, []);
-
-  // 2. Explicit Permission Requester
-  const requestMicrophonePermission = useCallback(async () => {
+  const requestMicrophonePermission = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          noiseSuppression: true,
-          echoCancellation: true,
-          autoGainControl: true,
-        },
-      });
-      // Permission granted
+      await navigator.mediaDevices.getUserMedia({ audio: true });
       setPermissionStatus('granted');
-      // Release test stream tracks immediately
-      stream.getTracks().forEach((track) => track.stop());
-      setStatusMessage('Microphone access granted. Ready to speak.');
-      return true;
     } catch (err) {
-      console.error('Microphone permission request error:', err);
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        setPermissionStatus('denied');
-        setStatusMessage('Microphone access denied. Please allow microphone permissions.');
-      }
-      return false;
-    }
-  }, []);
-
-  const cleanupMediaStream = () => {
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
-      mediaStreamRef.current = null;
+      setPermissionStatus('denied');
     }
   };
 
-  // 3. Start Recording Handler
-  const startListening = useCallback(async () => {
-    if (isListening || isProcessing) return;
-
-    // Check hardware permission before attempting recognition
-    if (permissionStatus === 'denied') {
-      alert('Microphone access is blocked in your browser settings. Please allow it in the address bar.');
-      return;
-    }
-
-    try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            noiseSuppression: true,
-            echoCancellation: true,
-            autoGainControl: true,
-          },
-        });
-        mediaStreamRef.current = stream;
-        setPermissionStatus('granted');
-      }
-    } catch (err) {
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        setPermissionStatus('denied');
-        return;
-      }
-    }
+  const startListening = useCallback(() => {
+    setStatusMessage('');
+    setTranscript('');
+    transcriptRef.current = '';
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('Speech recognition is not supported in this browser. Please use Google Chrome or Microsoft Edge.');
+      setStatusMessage("Speech recognition not supported in this browser.");
       return;
     }
 
     const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
+    
+    // CRITICAL FOR ANDROID: Must be true to stream text continuously
+    recognition.continuous = true; 
+    recognition.interimResults = true; 
     recognition.lang = 'en-US';
-
-    accumulatedTextRef.current = '';
 
     recognition.onstart = () => {
       setIsListening(true);
-      setStatusMessage('Listening (Noise suppression active)...');
+      setStatusMessage('Listening...');
     };
 
+    // This fires continuously as you speak
     recognition.onresult = (event) => {
-      let finalTranscript = '';
+      let currentTranscript = '';
       for (let i = 0; i < event.results.length; i++) {
-        finalTranscript += event.results[i][0].transcript + ' ';
+        currentTranscript += event.results[i][0].transcript;
       }
-      accumulatedTextRef.current = finalTranscript.trim();
-      setTranscript(finalTranscript.trim());
+      
+      // Save it to both the UI state and the background Ref
+      transcriptRef.current = currentTranscript;
+      setTranscript(currentTranscript);
     };
 
     recognition.onerror = (event) => {
-      console.error('Speech error:', event.error);
+      console.error("Speech error:", event.error);
       setIsListening(false);
-      cleanupMediaStream();
+      setStatusMessage(`Error: ${event.error}`);
+    };
 
-      if (event.error === 'not-allowed') {
-        setPermissionStatus('denied');
-        setStatusMessage('Microphone access not allowed. Please allow permission.');
-      } else {
-        setStatusMessage(`Voice error: ${event.error}. Please try again.`);
-      }
+    recognition.onend = () => {
+      setIsListening(false);
     };
 
     recognitionRef.current = recognition;
     recognition.start();
-  }, [isListening, isProcessing, permissionStatus]);
+  }, []);
 
-  // 4. Stop Recording Handler
   const stopListening = useCallback(async () => {
-    if (!recognitionRef.current || !isListening) return;
-
-    recognitionRef.current.stop();
-    cleanupMediaStream();
+    if (recognitionRef.current) {
+      recognitionRef.current.stop(); // Stops the mic
+    }
     setIsListening(false);
 
-    const fullTranscript = accumulatedTextRef.current;
-    if (!fullTranscript) {
-      setStatusMessage('No speech detected. Try holding the button longer.');
+    // Grab the text from the Ref, NOT the state, to avoid React batching delays
+    const finalSpeech = transcriptRef.current.trim();
+
+    // Update your error message to reflect the new Toggle mechanic
+    if (!finalSpeech) {
+      setStatusMessage('No speech detected. Please try again.');
       return;
     }
 
     setIsProcessing(true);
-    setStatusMessage('Denoising & parsing with Gemini...');
+    setStatusMessage('Processing voice command...');
 
     try {
-      const currentBill = getCurrentBillState ? getCurrentBillState() : null;
-
-      const response = await axios.post(apiEndpoint, {
-        transcript: fullTranscript,
-        current_bill: currentBill,
+      const res = await axios.post(apiEndpoint, {
+        transcript: finalSpeech,
+        current_bill: getCurrentBillState ? getCurrentBillState() : null
       });
-
-      if (onDataReceived) {
-        onDataReceived(response.data);
-      }
-      setStatusMessage('Bill updated successfully!');
+      onDataReceived(res.data);
+      setStatusMessage('Success!');
     } catch (err) {
-      console.error('Error sending transcript to backend:', err);
-      setStatusMessage('Failed to update bill. Check backend connection.');
+      console.error(err);
+      setStatusMessage('Failed to parse bill. Check backend.');
     } finally {
       setIsProcessing(false);
+      setTranscript('');
+      transcriptRef.current = '';
     }
-  }, [apiEndpoint, isListening, onDataReceived, getCurrentBillState]);
+  }, [apiEndpoint, getCurrentBillState, onDataReceived]);
 
   return {
-    isListening,
-    isProcessing,
-    statusMessage,
-    transcript,
-    permissionStatus,
-    requestMicrophonePermission,
-    startListening,
-    stopListening,
+    isListening, isProcessing, statusMessage, transcript, permissionStatus,
+    requestMicrophonePermission, startListening, stopListening
   };
 }
