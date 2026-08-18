@@ -12,6 +12,8 @@ An intelligent, full-stack web application that allows users to generate, manage
 * **Relational Database Architecture:** Seamless parent-child data integrity between `bills` and `bill_items` using SQLAlchemy with cascading deletes.
 * **Toast Notifications:** Lightweight, self-clearing UI feedback for database operations.
 
+## Live URL : https://voice-billing-frontend.onrender.com/
+## API Live URL : https://voice-billing-backend-vmbd.onrender.com/docs
 ## 🛠️ Tech Stack
 
 **Frontend**
