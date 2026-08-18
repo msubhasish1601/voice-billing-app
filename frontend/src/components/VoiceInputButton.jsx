@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mic, MicOff, Loader2, Sparkles } from 'lucide-react';
+import { Mic, Loader2 } from 'lucide-react';
 
 export function VoiceInputButton({ 
   isListening, 
@@ -10,53 +10,70 @@ export function VoiceInputButton({
   onStop 
 }) {
   return (
-    <div style={{ marginBottom: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button
-          type="button"
-          onMouseDown={onStart}
-          onMouseUp={onStop}
-          onTouchStart={onStart}
-          onTouchEnd={onStop}
-          disabled={isProcessing}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '12px 24px',
-            backgroundColor: isListening ? '#ef4444' : isProcessing ? '#6b7280' : '#2563eb',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: isProcessing ? 'not-allowed' : 'pointer',
-            fontWeight: '600',
-            fontSize: '14px',
-            userSelect: 'none',
-            transform: isListening ? 'scale(0.98)' : 'scale(1)',
-            transition: 'transform 0.1s ease',
-            boxShadow: isListening ? '0 0 15px rgba(239, 68, 68, 0.5)' : 'none'
-          }}
-        >
-          {isProcessing ? (
-            <><Loader2 className="animate-spin" size={18} /> Processing...</>
-          ) : isListening ? (
-            <><MicOff size={18} /> Release to Process</>
-          ) : (
-            <><Mic size={18} /> Hold to Speak</>
-          )}
-        </button>
-      </div>
-
-      <div style={{ marginTop: '12px', padding: '10px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#0f172a', fontWeight: '500' }}>
-          <Sparkles size={16} color="#2563eb" /> {statusMessage}
-        </div>
-        {transcript && (
-          <div style={{ marginTop: '4px', color: '#64748b', fontStyle: 'italic' }}>
-            Transcribed: "{transcript}"
-          </div>
+    <div style={{ marginBottom: '24px' }}>
+      <button
+        // --- Desktop Events ---
+        onMouseDown={onStart}
+        onMouseUp={onStop}
+        onMouseLeave={onStop}
+        
+        // --- Mobile Touch Events ---
+        onTouchStart={(e) => {
+          e.preventDefault(); // Prevents double-firing with mouse events
+          onStart();
+        }}
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          onStop();
+        }}
+        
+        disabled={isProcessing}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '12px 24px',
+          backgroundColor: isListening ? '#ef4444' : '#2563eb', // Red when listening, Blue normally
+          color: '#fff',
+          border: 'none',
+          borderRadius: '8px',
+          fontWeight: '600',
+          fontSize: '16px',
+          cursor: isProcessing ? 'not-allowed' : 'pointer',
+          width: '100%',
+          justifyContent: 'center',
+          transition: 'background-color 0.2s',
+          
+          // --- Mobile CSS Fixes: Prevents long-press context menus ---
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          WebkitTouchCallout: 'none',
+          touchAction: 'none' // Prevents scrolling while holding the button
+        }}
+      >
+        {isProcessing ? (
+          <Loader2 size={20} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+        ) : (
+          <Mic size={20} />
         )}
-      </div>
+        {isProcessing ? 'Processing AI...' : isListening ? 'Listening... Release to send' : 'Hold to Speak'}
+      </button>
+
+      {/* Status & Transcript Display */}
+      {(statusMessage || transcript) && (
+        <div style={{ marginTop: '12px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+          {statusMessage && (
+            <p style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '500', color: isListening ? '#2563eb' : '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '18px' }}>✨</span> {statusMessage}
+            </p>
+          )}
+          {transcript && (
+            <p style={{ margin: 0, fontSize: '14px', color: '#64748b', fontStyle: 'italic' }}>
+              "{transcript}"
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
