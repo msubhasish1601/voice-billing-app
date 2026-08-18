@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mic, Loader2 } from 'lucide-react';
+import { Mic, Square, Loader2 } from 'lucide-react';
 
 export function VoiceInputButton({ 
   isListening, 
@@ -9,31 +9,29 @@ export function VoiceInputButton({
   onStart, 
   onStop 
 }) {
+
+  const handleToggle = (e) => {
+    e.preventDefault(); // Safe to use here inside onClick
+    if (isProcessing) return;
+    
+    if (isListening) {
+      onStop();
+    } else {
+      onStart();
+    }
+  };
+
   return (
     <div style={{ marginBottom: '24px' }}>
       <button
-        // --- Desktop Events ---
-        onMouseDown={onStart}
-        onMouseUp={onStop}
-        onMouseLeave={onStop}
-        
-        // --- Mobile Touch Events ---
-        onTouchStart={(e) => {
-          e.preventDefault(); // Prevents double-firing with mouse events
-          onStart();
-        }}
-        onTouchEnd={(e) => {
-          e.preventDefault();
-          onStop();
-        }}
-        
+        onClick={handleToggle}
         disabled={isProcessing}
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
-          padding: '12px 24px',
-          backgroundColor: isListening ? '#ef4444' : '#2563eb', // Red when listening, Blue normally
+          padding: '14px 24px', // Slightly taller for easier mobile tapping
+          backgroundColor: isListening ? '#ef4444' : '#2563eb', // Red when recording
           color: '#fff',
           border: 'none',
           borderRadius: '8px',
@@ -44,19 +42,25 @@ export function VoiceInputButton({
           justifyContent: 'center',
           transition: 'background-color 0.2s',
           
-          // --- Mobile CSS Fixes: Prevents long-press context menus ---
+          // Mobile optimizations
           userSelect: 'none',
           WebkitUserSelect: 'none',
-          WebkitTouchCallout: 'none',
-          touchAction: 'none' // Prevents scrolling while holding the button
+          touchAction: 'manipulation' // Optimizes tap delay on mobile devices
         }}
       >
         {isProcessing ? (
           <Loader2 size={20} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+        ) : isListening ? (
+          <Square size={18} fill="currentColor" /> // Stop icon
         ) : (
           <Mic size={20} />
         )}
-        {isProcessing ? 'Processing AI...' : isListening ? 'Listening... Release to send' : 'Hold to Speak'}
+        
+        {isProcessing 
+          ? 'Processing AI...' 
+          : isListening 
+            ? 'Listening... Tap to Stop' 
+            : 'Tap to Speak'}
       </button>
 
       {/* Status & Transcript Display */}
