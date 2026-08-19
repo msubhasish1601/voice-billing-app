@@ -87,11 +87,11 @@ export function DynamicBillingTable({ items = [], onChange }) {
         </tbody>
       </table>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '2px solid #e5e7eb' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',flexWrap: 'wrap', gap: '16px', marginTop: '16px' }}>
         <button
           type="button"
           onClick={addItemRow}
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontSize: '13px' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontSize: '13px',whiteSpace: 'nowrap', flexShrink: 0 }}
         >
           <Plus size={15} /> Add Item Row
         </button>

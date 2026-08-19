@@ -1,74 +1,45 @@
 import React from 'react';
-import { HelpCircle, PlusCircle, Edit3, UserCheck } from 'lucide-react';
+import { Info, Smartphone, Monitor } from 'lucide-react';
 
 export function VoiceHints() {
-  const hintCategories = [
-    {
-      title: "Initial Invoice Creation",
-      icon: <UserCheck size={16} color="#2563eb" />,
-      examples: [
-        '"Bill for Robert Fox, 45 Orchid Lane, 2 notebooks at 3.50 each and 1 desk lamp at 25"',
-        '"Create invoice for John Doe, 12 Baker Street, 5 pens at 2 dollars and 1 bag at 40"'
-      ]
-    },
-    {
-      title: "Add Items (Incremental)",
-      icon: <PlusCircle size={16} color="#16a34a" />,
-      examples: [
-        '"Also add 3 whiteboard markers at 4 each"',
-        '"Add two bottles of hand sanitizer at 6.50 and one box of staples at 3"'
-      ]
-    },
-    {
-      title: "Edit / Update Existing Data",
-      icon: <Edit3 size={16} color="#d97706" />,
-      examples: [
-        '"Change notebook quantity to 5"',
-        '"Update desk lamp price to 30"',
-        '"Update customer name to Amrinder Singh"'
-      ]
-    }
-  ];
-
   return (
-    <div style={{
-      marginTop: '32px',
-      padding: '16px 20px',
-      backgroundColor: '#f8fafc',
-      border: '1px solid #e2e8f0',
-      borderRadius: '10px'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-        <HelpCircle size={18} color="#475569" />
-        <h4 style={{ margin: 0, fontSize: '14px', color: '#1e293b', fontWeight: '600' }}>
-          Voice Command Examples & Hints
-        </h4>
-      </div>
+    <div style={{ marginTop: '32px', borderTop: '1px solid #e2e8f0', paddingTop: '24px' }}>
+      <h3 style={{ fontSize: '16px', color: '#334155', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <Info size={18} color="#2563eb" />
+        Voice Command Best Practices
+      </h3>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
-        {hintCategories.map((cat, idx) => (
-          <div
-            key={idx}
-            style={{
-              padding: '12px',
-              backgroundColor: '#ffffff',
-              borderRadius: '8px',
-              border: '1px solid #edf2f7'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontWeight: '600', fontSize: '13px', color: '#334155' }}>
-              {cat.icon}
-              <span>{cat.title}</span>
-            </div>
-            <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '12px', color: '#64748b', lineHeight: '1.4' }}>
-              {cat.examples.map((example, i) => (
-                <li key={i} style={{ marginBottom: '6px' }}>
-                  {example}
-                </li>
-              ))}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+        
+        {/* Mobile Instructions Card */}
+        <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fef3c7', padding: '16px', borderRadius: '8px' }}>
+          <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#b45309', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Smartphone size={16} />
+            Mobile Phone Users
+          </h4>
+          <p style={{ margin: 0, fontSize: '13px', color: '#92400e', lineHeight: '1.6' }}>
+            Mobile browsers have strict microphone timeouts. To prevent the audio from cutting off, <strong>speak one detail at a time:</strong>
+            <ul style={{ margin: '8px 0 0 0', paddingLeft: '24px' }}>
+              <li style={{ marginBottom: '4px' }}>Tap speak, say <em>"Customer Raghav Singh"</em>, tap Stop.</li>
+              <li style={{ marginBottom: '4px' }}>Tap speak, say <em>"Address BMC Hospital"</em>, tap Stop.</li>
+              <li>Tap speak, say <em>"20 bananas at 5 dollars"</em>, tap Stop.</li>
             </ul>
-          </div>
-        ))}
+          </p>
+        </div>
+
+        {/* Desktop Instructions Card */}
+        <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #dcfce3', padding: '16px', borderRadius: '8px' }}>
+          <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#166534', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Monitor size={16} />
+            Desktop / Laptop Users
+          </h4>
+          <p style={{ margin: 0, fontSize: '13px', color: '#15803d', lineHeight: '1.6' }}>
+            Desktop browsers do not timeout. You can speak the entire invoice in one continuous sentence:
+            <br /><br />
+            <em>"Create a bill for Robert Fox at 45 Orchid Lane. Add 2 notebooks at 3.50 each and 1 desk lamp at 25 dollars."</em>
+          </p>
+        </div>
+
       </div>
     </div>
   );
