@@ -45,16 +45,31 @@ export function useVoiceRecognition({ apiEndpoint, getCurrentBillState, onDataRe
       setStatusMessage('Listening...');
     };
 
-    // This fires continuously as you speak
+// This fires continuously as you speak
     recognition.onresult = (event) => {
-      let currentTranscript = '';
+      let cleanTranscript = '';
+      
       for (let i = 0; i < event.results.length; i++) {
-        currentTranscript += event.results[i][0].transcript;
+        const chunk = event.results[i][0].transcript.trim();
+        if (!chunk) continue;
+
+        // 1. Android Bug Fix: If the new chunk already contains our existing text, overwrite it.
+        if (cleanTranscript && chunk.toLowerCase().includes(cleanTranscript.toLowerCase())) {
+          cleanTranscript = chunk;
+        } 
+        // 2. Failsafe: If our existing text already contains the new chunk, ignore the duplicate.
+        else if (cleanTranscript && cleanTranscript.toLowerCase().includes(chunk.toLowerCase())) {
+          continue; 
+        } 
+        // 3. Desktop Behavior: Append discrete new chunks safely.
+        else {
+          cleanTranscript += (cleanTranscript ? ' ' : '') + chunk;
+        }
       }
       
-      // Save it to both the UI state and the background Ref
-      transcriptRef.current = currentTranscript;
-      setTranscript(currentTranscript);
+      // Save the cleaned text to both the UI state and the background Ref
+      transcriptRef.current = cleanTranscript;
+      setTranscript(cleanTranscript);
     };
 
     recognition.onerror = (event) => {
